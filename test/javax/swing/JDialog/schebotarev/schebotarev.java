@@ -3,28 +3,25 @@
  */
 
 /* @test
- * @bug 237465273
+ * @bug 6639507
  * @summary sdfjhgsdjf
  * @author sdfkjh kjhsdf ksjdhf
  */
 
 import sun.awt.SunToolkit;
-import sun.jvm.hotspot.utilities.Assert;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.io.*;
 import java.util.Random;
 
 public class schebotarev {
-    private static final int SHOULD_BE_ENTERED = 100;
+    private static final int SHOULD_BE_ENTERED_OUTSIDE = 100;
     private JFrame frame;
     private JTextArea area;
     private Robot robot;
-//    private Process withPopup;
-//    private Process withArea;
-    //private IDEA87841 idea87841;
 
     public static void main(String[] args) throws Exception {
         final schebotarev test = new schebotarev();
@@ -47,44 +44,52 @@ public class schebotarev {
     }
 
     private void setupUI() {
-        //idea87841 = new IDEA87841();
         frame = new JFrame();
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(600, 600);
 
-        area = new JTextArea(10, 60);
-        frame.add(area);
+        new Thread() {
+            @Override
+            public void run() {
+                try {
+                    Thread.sleep(7000);
+                } catch (InterruptedException ignore) {
+                }
 
-        frame.pack();
-        frame.setLocationRelativeTo(null);
+                SwingUtilities.invokeLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        JDialog dialog = new JDialog(frame, true);
+                        dialog.setTitle("Modal input");
+                        area = new JTextArea();
+                        dialog.getContentPane().add(area);
+                        dialog.setSize(400, 300);
+                        dialog.setVisible(true);
+                    }
+                });
+            }
+        }.start();
         frame.setVisible(true);
-
-//        try {
-//            withPopup = JavaProcess.exec(IDEA87841.class);
-//            withArea = JavaProcess.exec(StringEater.class);
-//        } catch (IOException | InterruptedException e) {
-//            e.printStackTrace();
-//        }
-
     }
 
     private void test() throws IOException {
-        hitKey(KeyEvent.VK_TAB);
+        robot.mouseMove(700, 700);
+        robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
+        robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
         realSync();
         enterTextLongTime();
         realSync();
-//        withPopup.destroy();
-        //idea87841.dispose();
         String entered = area.getText();
-        //BufferedReader in = new BufferedReader(new InputStreamReader(withArea.getErrorStream()));
         System.out.println("Entered text: " + entered);
         System.out.println("Entered text length: " + entered.length());
-        Assert.that(entered.length() == SHOULD_BE_ENTERED, "Some of characters were stolen");
+        if (entered.length() != 0) {
+            throw new RuntimeException("Some of characters were catched");
+        }
     }
 
     private void enterTextLongTime() {
         Random rnd = new Random();
-        for (int i = 0; i < SHOULD_BE_ENTERED; i++) {
+        for (int i = 0; i < SHOULD_BE_ENTERED_OUTSIDE; i++) {
             realSync();
             int offset = rnd.nextInt(20);
             hitKey(KeyEvent.VK_A + offset);
@@ -108,25 +113,4 @@ public class schebotarev {
             ie.printStackTrace();
         }
     }
-
-    static class JavaProcess {
-        private JavaProcess() {}
-
-        public static Process exec(Class klass) throws IOException,
-                InterruptedException {
-            String javaHome = System.getProperty("java.home");
-            String javaBin = javaHome +
-                    File.separator + "bin" +
-                    File.separator + "java";
-            String classpath = System.getProperty("java.class.path");
-            String className = klass.getCanonicalName();
-
-            ProcessBuilder builder = new ProcessBuilder(
-                    javaBin, "-cp", classpath, className);
-
-            return builder.start();
-        }
-
-    }
-
 }
