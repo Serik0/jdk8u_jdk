@@ -50,6 +50,11 @@ public final class WrongBackgroundColor {
             dialog.pack();
             final Color dialogBackground = dialog.getBackground();
             final Color frameBackground = frame.getBackground();
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             frame.dispose();
             dialog.dispose();
             if (!dialogBackground.equals(frameBackground)) {
